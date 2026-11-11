@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SmartPark IoT</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%232563eb'/%3E%3Ctext x='16' y='24' font-size='22' font-weight='700' text-anchor='middle' fill='white' font-family='Arial'%3EP%3C/text%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b1220; --bg2:#0f172a; --card:#1a2132; --card2:#222b3d; --line:#2f3a50;
+  --text:#f1f5f9; --muted:#94a3b8; --blue:#3b82f6; --blue-d:#2563eb;
+  --green:#22c55e; --yellow:#eab308; --red:#ef4444;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;background:radial-gradient(1200px 600px at 50% -200px,#16223d 0,var(--bg) 60%) fixed,var(--bg);color:var(--text);min-height:100vh}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+
+/* header */
+header{display:flex;align-items:center;gap:20px;padding:14px 24px;border-bottom:1px solid var(--line);background:rgba(11,18,32,.85);position:sticky;top:0;z-index:20;backdrop-filter:blur(8px)}
+.brand{display:flex;align-items:center;gap:12px;flex:none}
+.logo{width:44px;height:44px;border-radius:11px;background:var(--blue-d);display:grid;place-items:center;font-weight:800;font-size:26px}
+.brand h1{margin:0;font-size:22px;line-height:1.1}
+.conn{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.conn.on .dot{background:var(--green);box-shadow:0 0 8px var(--green)}
+.conn.off .dot{background:var(--red);box-shadow:0 0 8px var(--red)}
+.conn.on{color:#86efac}.conn.off{color:#fca5a5}
+nav{display:flex;gap:6px;overflow-x:auto;flex:1}
+nav button{background:none;border:0;border-radius:999px;padding:11px 20px;font-size:16px;font-weight:500;color:#cbd5e1;white-space:nowrap;display:flex;align-items:center;gap:8px}
+nav button:hover{background:var(--card)}
+nav button.active{background:var(--blue-d);color:#fff}
+nav svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+main{max-width:1180px;margin:0 auto;padding:22px 20px 60px}
+.view{display:none}.view.active{display:block}
+.banner{display:none;margin-bottom:18px;padding:12px 16px;border:1px solid #7f1d1d;background:#2a1215;border-radius:12px;color:#fecaca;font-size:15px}
+.banner.show{display:block}
+
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:26px}
+.stat{display:flex;align-items:center;gap:14px;padding:16px 18px;border-radius:14px;background:var(--card);border:2px solid var(--line)}
+.stat .ic{width:46px;height:46px;border-radius:11px;display:grid;place-items:center;background:rgba(148,163,184,.15)}
+.stat svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.stat small{display:block;font-size:14px;color:var(--muted);font-weight:600}
+.stat b{font-size:30px;line-height:1.1}
+.stat.g{border-color:var(--green);box-shadow:0 0 14px rgba(34,197,94,.3)}.stat.g .ic{background:rgba(34,197,94,.15);color:var(--green)}
+.stat.y{border-color:var(--yellow);box-shadow:0 0 14px rgba(234,179,8,.28)}.stat.y .ic{background:rgba(234,179,8,.15);color:var(--yellow)}
+.stat.r{border-color:var(--red);box-shadow:0 0 14px rgba(239,68,68,.3)}.stat.r .ic{background:rgba(239,68,68,.15);color:var(--red)}
+
+h2{margin:0;font-size:24px}
+.sub{margin:6px 0 16px;font-size:15px;color:var(--muted)}
+.sub .g{color:var(--green)}.sub .y{color:var(--yellow)}.sub .r{color:var(--red)}
+.chip{display:inline-block;margin-left:10px;padding:3px 12px;border:1px solid var(--blue);border-radius:999px;font-size:14px;font-weight:500;color:#93c5fd;background:rgba(59,130,246,.12);vertical-align:middle}
+
+/* bays */
+.bays{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-bottom:22px}
+.bay{padding:14px;border-radius:14px;background:var(--card);border:2px solid var(--green);box-shadow:0 0 14px rgba(34,197,94,.28)}
+.bay.reserved{border-color:var(--yellow);box-shadow:0 0 14px rgba(234,179,8,.28)}
+.bay.occupied{border-color:var(--red);box-shadow:0 0 14px rgba(239,68,68,.3)}
+.bay .top{display:flex;align-items:center;gap:10px;font-size:18px}
+.bay .top .ic{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:rgba(34,197,94,.15);color:var(--green)}
+.bay.reserved .ic{background:rgba(234,179,8,.15);color:var(--yellow)}
+.bay.occupied .ic{background:rgba(239,68,68,.15);color:var(--red)}
+.bay .ic svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.bay .top span{color:#cbd5e1;font-weight:400}
+.bay .state{text-align:center;font-size:25px;font-weight:800;margin:16px 0;color:var(--green);letter-spacing:.3px}
+.bay.reserved .state{color:var(--yellow)}.bay.occupied .state{color:var(--red)}
+.btn{width:100%;padding:10px 14px;border-radius:9px;border:1px solid var(--line);background:var(--card2);font-size:17px;font-weight:500}
+.btn:hover:not(:disabled){background:#2b364c}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.blue{background:var(--blue);border-color:var(--blue);font-weight:700;color:#fff}.btn.blue:hover:not(:disabled){background:var(--blue-d)}
+.btn.green{background:#10b981;border-color:#10b981;font-weight:700;color:#fff}.btn.green:hover:not(:disabled){background:#059669}
+.btn.red{background:var(--red);border-color:var(--red);font-weight:700;color:#fff}.btn.red:hover:not(:disabled){background:#dc2626}
+.btn.auto{width:auto;padding:9px 18px}
+
+/* panels */
+.panel{border:1px solid var(--line);background:var(--card);border-radius:14px;margin-bottom:18px;overflow:hidden}
+.panel .head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;font-size:22px;border-bottom:1px solid var(--line)}
+.panel .head .l{display:flex;align-items:center;gap:12px}
+.panel .head .ic{width:38px;height:38px;border-radius:9px;display:grid;place-items:center;background:var(--card2);color:var(--muted)}
+.panel .head svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.pill{padding:8px 18px;border-radius:999px;background:#e2e8f0;color:#1e293b;font-size:17px;font-weight:600;white-space:nowrap}
+.pill.y{background:rgba(234,179,8,.2);color:#fde047}.pill.g{background:rgba(34,197,94,.2);color:#86efac}
+.empty{padding:26px 18px;text-align:center;font-size:20px;color:#cbd5e1;display:flex;gap:10px;align-items:center;justify-content:center}
+.empty svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.bk{padding:18px;display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:16px;align-items:center;border-bottom:1px solid var(--line)}
+.bk:last-child{border-bottom:0}
+.bk label{display:block;font-size:13px;color:var(--muted);margin-bottom:3px}
+.bk .v{font-size:19px;font-weight:600}
+.bk .big{font-size:26px;font-variant-numeric:tabular-nums;color:#93c5fd}
+.bk .mail{color:var(--yellow)}
+.note{padding:0 18px 16px;color:var(--muted);font-size:14px}
+
+/* simulator */
+.sim{padding:16px 18px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.sim-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:999px;background:var(--bg2);font-size:15px}
+.sw{position:relative;width:44px;height:24px;flex:none}
+.sw input{position:absolute;inset:0;opacity:0;cursor:pointer;margin:0}
+.sw span{position:absolute;inset:0;border-radius:999px;background:#334155;transition:.15s}
+.sw span::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#94a3b8;transition:.15s}
+.sw input:checked+span{background:rgba(239,68,68,.4)}.sw input:checked+span::after{left:23px;background:var(--red)}
+.sw input:disabled{cursor:not-allowed}.sw input:disabled+span{opacity:.5}
+
+/* inbox */
+.mail-card{border:1px solid var(--line);background:var(--card);border-radius:14px;margin-bottom:14px;overflow:hidden}
+.mail-card .mh{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.mail-card .mh b{font-size:17px}.mail-card .mh small{color:var(--muted)}
+.mail-card pre{margin:0;padding:16px 18px;white-space:pre-wrap;font:15px/1.55 inherit;font-family:inherit;color:#e2e8f0}
+.tag{font-size:12px;border-radius:999px;padding:3px 10px;margin-left:8px;font-weight:600}
+.tag.sent{background:rgba(34,197,94,.18);color:#86efac}.tag.inbox-only{background:rgba(59,130,246,.18);color:#93c5fd}.tag.failed{background:rgba(239,68,68,.18);color:#fca5a5}
+
+/* admin */
+.narrow{max-width:640px;margin:0 auto}
+.acard{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:18px;margin-bottom:18px}
+.acard h3{margin:0 0 14px;font-size:18px;color:var(--blue)}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.row>*{flex:1}
+.status-open{color:#34d399;font-weight:800}.status-blocked{color:#f87171;font-weight:800}
+input[type=text],input[type=email],input[type=password],input[type=number]{width:100%;padding:11px 13px;border-radius:9px;border:1px solid var(--line);background:var(--bg2);font-size:16px}
+.rate-in{max-width:110px;flex:none}
+.lbl{display:block;font-size:14px;color:#cbd5e1;margin:12px 0 5px}
+.err{color:#fca5a5;font-size:14px;min-height:20px;margin-top:10px}
+.tw{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:15px}
+th{color:var(--blue);text-align:left;padding:8px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid #263047;white-space:nowrap}
+.st{font-weight:700}.st.reserved{color:var(--yellow)}.st.active{color:#60a5fa}.st.completed{color:var(--green)}.st.cancelled,.st.expired{color:var(--muted)}
+.rev{text-align:center;color:var(--muted);font-size:15px;margin-top:14px}
+
+/* api tab */
+pre.code{background:#0a0f1c;border:1px solid var(--line);border-radius:10px;padding:14px;overflow-x:auto;font:13.5px/1.55 ui-monospace,Consolas,monospace;color:#cbd5e1;margin:8px 0 18px}
+.api p,.api li{color:#cbd5e1;line-height:1.6}.api h3{margin:22px 0 4px}
+.kv{display:grid;grid-template-columns:140px 1fr;gap:6px 14px;font-size:15px}.kv span:nth-child(odd){color:var(--muted)}
+
+/* dialog + toast */
+dialog{border:1px solid var(--line);border-radius:16px;background:var(--card);color:var(--text);padding:0;width:min(440px,92vw)}
+dialog::backdrop{background:rgba(2,6,16,.7)}
+.dlg{padding:22px}.dlg h3{margin:0 0 4px;font-size:22px}
+.dlg .actions{display:flex;gap:10px;margin-top:20px}
+#toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:#0a0f1c;border:1px solid var(--line);padding:12px 18px;border-radius:10px;opacity:0;pointer-events:none;transition:.2s;z-index:50;max-width:92vw}
+#toast.show{opacity:1;transform:translateX(-50%)}
+
+@media (max-width:900px){
+  header{flex-wrap:wrap;padding:12px 14px;gap:10px}
+  nav{order:3;flex-basis:100%}
+  .stats,.bays{grid-template-columns:repeat(2,1fr);gap:12px}
+  .sim{grid-template-columns:repeat(2,1fr)}
+  nav button{padding:9px 14px;font-size:15px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <div class="logo">P</div>
+    <div>
+      <h1>SmartPark IoT</h1>
+      <div class="conn" id="conn"><span class="dot"></span><span id="connText">Checking ESP32…</span></div>
+    </div>
+  </div>
+  <nav id="nav">
+    <button class="active" data-view="customer"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Customer Portal</button>
+    <button data-view="inbox"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span id="inboxLabel">Email Inbox (0)</span></button>
+    <button data-view="admin"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>Admin Dashboard</button>
+    <button data-view="api"><svg viewBox="0 0 24 24"><path d="M8 7l-5 5 5 5"/><path d="M16 7l5 5-5 5"/></svg>ESP32 API &amp; Email Code</button>
+  </nav>
+</header>
+
+<main>
+<!-- ============ CUSTOMER ============ -->
+<section class="view active" id="view-customer">
+  <div class="banner" id="offBanner"><b>ESP32 offline.</b> The gates and keypad cannot be reached right now. Bookings are saved and the PIN works as soon as the ESP32 is back online.</div>
+  <div class="banner" id="closedBanner"><b>Bookings are closed</b> by the administrator.</div>
+
+  <div class="stats">
+    <div class="stat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5z"/><path d="M3 13l9 5 9-5"/></svg></div><div><small>TOTAL BAYS:</small><b id="sTotal">4</b></div></div>
+    <div class="stat g"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l3 3 5-6"/></svg></div><div><small>AVAILABLE:</small><b id="sAvail">0</b></div></div>
+    <div class="stat y"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg></div><div><small>RESERVED:</small><b id="sRes">0</b></div></div>
+    <div class="stat r"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 16v-5l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="8" cy="13" r=".6"/><circle cx="16" cy="13" r=".6"/></svg></div><div><small>OCCUPIED (IR):</small><b id="sOcc">0</b></div></div>
+  </div>
+
+  <h2>Live Parking Bay Layout <span class="chip">Real-Time IR Sensing</span></h2>
+  <p class="sub"><span class="g">Green</span> = Available | <span class="y">Yellow</span> = Reserved (Customer PIN) | <span class="r">Red</span> = Occupied (Vehicle Detected by IR)</p>
+  <div class="bays" id="bays"></div>
+
+  <div class="panel">
+    <div class="head"><div class="l"><div class="ic"><svg viewBox="0 0 24 24"><path d="M5 16v-5l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/></svg></div>Your Active Booking &amp; PIN</div><span class="pill" id="sessPill">No Active Session</span></div>
+    <div id="active"></div>
+  </div>
+
+  <div class="panel">
+    <div class="head"><div class="l"><div><div>Hardware IR Simulator</div><div class="sub" style="margin:2px 0 0;font-size:15px" id="simNote">Use this when the ESP32 is switched off, to demo vehicle detection.</div></div></div></div>
+    <div class="sim" id="sim"></div>
+  </div>
+</section>
+
+<!-- ============ INBOX ============ -->
+<section class="view" id="view-inbox">
+  <h2>Email Inbox</h2>
+  <p class="sub">Every PIN email sent to your bookings appears here, even if real email delivery is not set up.</p>
+  <div id="mails"></div>
+</section>
+
+<!-- ============ ADMIN ============ -->
+<section class="view" id="view-admin">
+  <div class="narrow" id="adminLogin">
+    <div class="acard" style="margin-top:30px">
+      <h3 style="font-size:24px;text-align:center">Management Login</h3>
+      <p class="sub" style="text-align:center">Enter administrative credentials</p>
+      <label class="lbl" for="aUser">Username</label><input type="text" id="aUser" autocomplete="username">
+      <label class="lbl" for="aPass">Password</label><input type="password" id="aPass" autocomplete="current-password">
+      <div class="err" id="aErr"></div>
+      <button class="btn blue" id="aLogin" style="margin-top:6px">Login</button>
+    </div>
+  </div>
+
+  <div id="adminDash" style="display:none">
+    <div class="narrow">
+      <div style="text-align:center;margin-bottom:18px">
+        <h2 style="color:var(--blue)">Management Dashboard</h2>
+        <p class="sub" style="margin:4px 0 0">Real-time system controls and analytics</p>
+      </div>
+      <div class="acard">
+        <h3>Booking system override</h3>
+        <p style="margin:0 0 14px">Status: <span id="sysStatus" class="status-open">OPEN FOR BOOKINGS</span></p>
+        <button class="btn red" id="sysBtn">Close system to block bookings</button>
+      </div>
+      <div class="acard">
+        <h3>Boom gates</h3>
+        <div class="row"><button class="btn green" id="gEntry">Open entry gate</button><button class="btn green" id="gExit">Open exit gate</button></div>
+      </div>
+      <div class="acard">
+        <h3>Rate and revenue</h3>
+        <div class="row" style="justify-content:space-between"><label for="rate" style="color:var(--muted);flex:none">Hourly rate (R)</label><div class="row" style="flex:none;justify-content:flex-end"><input type="number" id="rate" class="rate-in" min="0" step="1"><button class="btn blue auto" id="rateBtn">Save</button></div></div>
+        <div class="rev">Total revenue (completed sessions): <span id="revenue">R0.00</span></div>
+      </div>
+    </div>
+    <div class="acard">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><h3 style="margin:0;flex:none">Bookings</h3><button class="btn auto" id="csvBtn" style="flex:none">Export CSV</button></div>
+      <div class="tw"><table><thead><tr><th>Bay</th><th>Name</th><th>Email</th><th>Plate</th><th>Status</th><th>Fee</th></tr></thead><tbody id="bookRows"></tbody></table></div>
+    </div>
+    <div class="narrow"><button class="btn" id="logoutBtn">Logout</button></div>
+  </div>
+</section>
+
+<!-- ============ API ============ -->
+<section class="view api" id="view-api">
+  <h2>ESP32 API &amp; Email Code</h2>
+  <p class="sub">How the ESP32 talks to this website. The full Arduino code is <b>smart_parking.ino</b> in the project folder.</p>
+  <div class="acard"><h3>Live device status</h3>
+    <div class="kv"><span>Connection</span><span id="dvState">-</span><span>Last seen</span><span id="dvSeen">-</span><span>IP address</span><span id="dvIp">-</span><span>Wi-Fi signal</span><span id="dvRssi">-</span></div>
+  </div>
+  <h3>Endpoints (header <code>x-api-key</code> required)</h3>
+  <pre class="code">POST /api/esp32/sync        every 3 s: {"bays":[0,1,0,0],"ip":"...","rssi":-60,"uptime":120}
+                            reply: {"bays":["available","reserved",...],"commands":["open_entry"]}
+POST /api/esp32/verify-pin  keypad: {"pin":"4821"}
+                            reply: {"ok":true,"action":"entry|exit","gate":0|1,"bay":2}</pre>
+  <p>If the ESP32 has not synced for 12 seconds the header turns to <b>ESP32 Offline</b>. While it keeps syncing the header shows <b>ESP32 Online</b>.</p>
+  <h3>Email code</h3>
+  <p>When a customer books, the server creates a 4-digit PIN, stores the booking in the database and emails the PIN. Set <b>BREVO_API_KEY</b> and <b>MAIL_FROM</b> in Render for real emails. Without them the email still shows in the Email Inbox tab.</p>
+  <pre class="code">POST https://api.brevo.com/v3/smtp/email
+headers: api-key: &lt;BREVO_API_KEY&gt;
+body:    { sender:{email:MAIL_FROM}, to:[{email}], subject, textContent }</pre>
+</section>
+</main>
+
+<dialog id="dlg">
+  <div class="dlg" id="dlgBody"></div>
+</dialog>
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+const $ = (s, el = document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const money = n => 'R' + Number(n || 0).toFixed(2);
+const pad = n => String(n).padStart(2, '0');
+const hms = ms => { ms = Math.max(0, Math.floor(ms / 1000)); return pad(Math.floor(ms / 3600)) + 'h ' + pad(Math.floor(ms % 3600 / 60)) + 'm ' + pad(ms % 60) + 's'; };
+const ms2 = ms => { ms = Math.max(0, Math.floor(ms / 1000)); return pad(Math.floor(ms / 60)) + ':' + pad(ms % 60); };
+
+const store = {
+  get(k, d) { try { return JSON.parse(localStorage.getItem(k)) ?? d; } catch { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} }
+};
+const tokens = () => store.get('sp_tokens', []);
+const addToken = t => { const a = tokens().filter(x => x !== t); a.unshift(t); store.set('sp_tokens', a.slice(0, 20)); };
+let adminToken = ''; try { adminToken = sessionStorage.getItem('sp_admin') || ''; } catch {}
+
+async function api(path, opts = {}) {
+  const r = await fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+  let data = null; try { data = await r.json(); } catch {}
+  if (!r.ok) { const e = new Error((data && data.error) || 'Request failed (' + r.status + ')'); e.status = r.status; throw e; }
+  return data;
+}
+const tokHeader = () => ({ 'x-tokens': tokens().join(',') });
+const adminHeader = () => ({ Authorization: 'Bearer ' + adminToken });
+
+let toastTimer;
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 3200); }
+
+const carSvg = '<svg viewBox="0 0 24 24"><path d="M5 16v-5l2-5h10l2 5v5"/><path d="M3 16h18v3H3z"/><circle cx="8" cy="13" r=".6"/><circle cx="16" cy="13" r=".6"/></svg>';
+
+/* ---------- navigation ---------- */
+let view = 'customer';
+function show(v) {
+  view = v;
+  document.querySelectorAll('.view').forEach(s => s.classList.toggle('active', s.id === 'view-' + v));
+  document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('active', b.dataset.view === v));
+  if (v === 'admin') loadAdmin(); if (v === 'inbox') loadInbox();
+}
+$('#nav').addEventListener('click', e => { const b = e.target.closest('button'); if (b) show(b.dataset.view); });
+
+/* ---------- live status ---------- */
+let status = null, mine = [], offset = 0, sigBays = '';
+async function pollStatus() {
+  try {
+    status = await api('/api/status');
+    offset = status.serverTime - Date.now();
+    renderStatus();
+  } catch (e) {
+    $('#conn').className = 'conn off'; $('#connText').textContent = 'Server unreachable';
+  }
+  if (tokens().length) {
+    try { mine = (await api('/api/bookings/mine', { headers: tokHeader() })).bookings; renderActive(); } catch {}
+  }
+}
+function renderStatus() {
+  const s = status, on = s.esp32.online;
+  $('#conn').className = 'conn ' + (on ? 'on' : 'off');
+  $('#connText').textContent = on ? 'ESP32 Online' : 'ESP32 Offline';
+  $('#offBanner').classList.toggle('show', !on);
+  $('#closedBanner').classList.toggle('show', !s.systemOpen);
+  const c = k => s.bays.filter(b => b.status === k).length;
+  $('#sTotal').textContent = s.bays.length; $('#sAvail').textContent = c('available');
+  $('#sRes').textContent = c('reserved'); $('#sOcc').textContent = c('occupied');
+
+  const sig = JSON.stringify([s.bays, s.systemOpen, on]);
+  if (sig !== sigBays) {
+    sigBays = sig;
+    $('#bays').innerHTML = s.bays.map(b => {
+      const label = { available: 'AVAILABLE', reserved: 'RESERVED', occupied: 'OCCUPIED' }[b.status];
+      const canBook = b.status === 'available' && s.systemOpen;
+      const btn = canBook ? 'Book Now' : (b.status === 'available' ? 'Bookings closed' : (b.status === 'reserved' ? 'Reserved' : 'Occupied'));
+      return `<div class="bay ${b.status}"><div class="top"><div class="ic">${carSvg}</div><div><b>Bay ${b.id}</b> <span>IR Sensor</span></div></div>
+        <div class="state">${label}</div><button class="btn" data-book="${b.id}" ${canBook ? '' : 'disabled'}>${btn}</button></div>`;
+    }).join('');
+    $('#sim').innerHTML = s.bays.map(b => `<div class="sim-row"><span>Bay ${b.id} IR</span><span style="color:var(--muted);font-size:13px">${b.ir ? 'Vehicle' : 'No Object'}</span>
+      <label class="sw"><input type="checkbox" data-sim="${b.id}" ${b.ir ? 'checked' : ''} ${on ? 'disabled' : ''} aria-label="Bay ${b.id} IR sensor"><span></span></label></div>`).join('');
+  }
+  $('#simNote').textContent = on ? 'ESP32 is online, so the real IR sensors are in control.' : 'ESP32 is offline. Use these switches to demo vehicle detection.';
+  // device tab
+  $('#dvState').textContent = on ? 'Online' : 'Offline';
+  $('#dvSeen').textContent = s.esp32.lastSeen ? new Date(s.esp32.lastSeen).toLocaleString() : 'never';
+  $('#dvIp').textContent = s.esp32.ip || '-';
+  $('#dvRssi').textContent = s.esp32.rssi != null ? s.esp32.rssi + ' dBm' : '-';
+}
+
+$('#bays').addEventListener('click', e => { const b = e.target.closest('[data-book]'); if (b && !b.disabled) openBooking(+b.dataset.book); });
+$('#sim').addEventListener('change', async e => {
+  const i = e.target.closest('[data-sim]'); if (!i) return;
+  try { await api('/api/simulate/ir', { method: 'POST', body: JSON.stringify({ bay: +i.dataset.sim, occupied: i.checked }) }); pollStatus(); }
+  catch (err) { toast(err.message); i.checked = !i.checked; }
+});
+
+/* ---------- booking ---------- */
+function openBooking(bayId) {
+  $('#dlgBody').innerHTML = `<h3>Book Bay ${bayId}</h3><p class="sub">Your 4-digit PIN will be sent to your email.</p>
+    <label class="lbl" for="bName">Full name</label><input type="text" id="bName" autocomplete="name" maxlength="60">
+    <label class="lbl" for="bEmail">Email address</label><input type="email" id="bEmail" autocomplete="email" maxlength="120">
+    <label class="lbl" for="bPlate">Number plate</label><input type="text" id="bPlate" maxlength="12" style="text-transform:uppercase">
+    <div class="err" id="bErr"></div>
+    <div class="actions"><button class="btn" id="bCancel">Cancel</button><button class="btn blue" id="bGo">Reserve &amp; email PIN</button></div>`;
+  $('#dlg').showModal(); $('#bName').focus();
+  $('#bCancel').onclick = () => $('#dlg').close();
+  $('#bGo').onclick = async () => {
+    const btn = $('#bGo'); btn.disabled = true; btn.textContent = 'Reserving…'; $('#bErr').textContent = '';
+    try {
+      const r = await api('/api/bookings', { method: 'POST', body: JSON.stringify({ bayId, name: $('#bName').value, email: $('#bEmail').value, plate: $('#bPlate').value }) });
+      addToken(r.booking.token);
+      const em = $('#bEmail').value.trim();
+      const how = r.booking.emailDelivery === 'sent' ? `We emailed your PIN to <b>${esc(em)}</b>.` :
+        r.booking.emailDelivery === 'failed' ? 'Email delivery failed, but your PIN is in the Email Inbox tab.' : 'Your PIN is in the Email Inbox tab.';
+      $('#dlgBody').innerHTML = `<h3 style="color:var(--green)">Reservation successful</h3><p class="sub">${esc(r.booking.bayName)} is reserved for you.</p>
+        <p>${how}</p><p class="sub">Type the PIN at the entry keypad and press #. Use the same PIN to leave.</p>
+        <div class="actions"><button class="btn" id="bClose">Close</button><button class="btn blue" id="bInbox">Open Email Inbox</button></div>`;
+      $('#bClose').onclick = () => $('#dlg').close();
+      $('#bInbox').onclick = () => { $('#dlg').close(); show('inbox'); };
+      pollStatus(); loadInbox();
+    } catch (err) { $('#bErr').textContent = err.message; btn.disabled = false; btn.textContent = 'Reserve & email PIN'; }
+  };
+}
+
+function renderActive() {
+  const open = mine.filter(b => b.status === 'reserved' || b.status === 'active');
+  const done = mine.filter(b => b.status === 'completed').slice(0, 3);
+  const pill = $('#sessPill');
+  if (!open.length) { pill.textContent = 'No Active Session'; pill.className = 'pill'; }
+  else if (open.some(b => b.status === 'active')) { pill.textContent = 'Session running'; pill.className = 'pill g'; }
+  else { pill.textContent = 'Reserved'; pill.className = 'pill y'; }
+
+  let html = '';
+  if (!open.length) html += `<div class="empty">${carSvg}No Active Booking Found</div>`;
+  open.forEach(b => {
+    if (b.status === 'reserved') {
+      html += `<div class="bk"><div><label>Bay</label><div class="v">${esc(b.bayName)}</div></div>
+        <div><label>Number plate</label><div class="v">${esc(b.plate)}</div></div>
+        <div><label>Your PIN</label><div class="v mail">Sent to your email</div></div>
+        <div><label>Reservation held for</label><div class="big" data-until="${esc(b.expiresAt)}">--:--</div></div>
+        <div><button class="btn red" data-cancel="${esc(tokenFor(b))}">Cancel Booking</button></div></div>`;
+    } else {
+      html += `<div class="bk"><div><label>Bay</label><div class="v">${esc(b.bayName)}</div></div>
+        <div><label>Number plate</label><div class="v">${esc(b.plate)}</div></div>
+        <div><label>Parking timer</label><div class="big" data-since="${esc(b.checkedInAt)}">00h 00m 00s</div></div>
+        <div><label>Estimated total</label><div class="big" style="color:var(--green)" data-fee="${b.rate}" data-since2="${esc(b.checkedInAt)}">${money(b.fee)}</div></div>
+        <div class="sub" style="margin:0">Enter your PIN at the exit keypad and press # to leave.</div></div>`;
+    }
+  });
+  done.forEach(b => { html += `<div class="note" style="padding-top:12px">${esc(b.bayName)}: session completed, fee ${money(b.fee)}.</div>`; });
+  const el = $('#active'); if (el.dataset.sig !== html) { el.innerHTML = html; el.dataset.sig = html; }
+  tick();
+}
+function tokenFor(b) { return b.token || ''; }
+$('#active').addEventListener('click', async e => {
+  const c = e.target.closest('[data-cancel]'); if (!c) return;
+  c.disabled = true;
+  try { await api('/api/bookings/cancel', { method: 'POST', body: JSON.stringify({ token: c.dataset.cancel }) }); toast('Booking cancelled.'); }
+  catch (err) { toast(err.message); }
+  pollStatus();
+});
+
+function tick() {
+  const now = Date.now() + offset;
+  document.querySelectorAll('[data-until]').forEach(el => { el.textContent = ms2(new Date(el.dataset.until).getTime() - now); });
+  document.querySelectorAll('[data-since]').forEach(el => { el.textContent = hms(now - new Date(el.dataset.since).getTime()); });
+  document.querySelectorAll('[data-since2]').forEach(el => {
+    const hrs = Math.max(1, Math.ceil((now - new Date(el.dataset.since2).getTime()) / 3600000));
+    el.textContent = money(hrs * Number(el.dataset.fee));
+  });
+}
+setInterval(tick, 1000);
+
+/* ---------- inbox ---------- */
+async function loadInbox() {
+  if (!tokens().length) { $('#mails').innerHTML = '<div class="panel"><div class="empty">Book a bay and your PIN email will appear here.</div></div>'; return; }
+  try {
+    const { emails } = await api('/api/inbox', { headers: tokHeader() });
+    $('#inboxLabel').textContent = `Email Inbox (${emails.length})`;
+    const tagText = { sent: 'Emailed', 'inbox-only': 'Demo inbox', failed: 'Email failed' };
+    $('#mails').innerHTML = emails.length ? emails.map(m => `<div class="mail-card"><div class="mh"><div><b>${esc(m.subject)}</b><span class="tag ${esc(m.delivery)}">${tagText[m.delivery] || ''}</span></div><small>To ${esc(m.to_email)} &middot; ${esc(new Date(m.created_at).toLocaleString())}</small></div><pre>${esc(m.body)}</pre></div>`).join('')
+      : '<div class="panel"><div class="empty">No emails yet.</div></div>';
+  } catch {}
+}
+
+/* ---------- admin ---------- */
+let adminData = null, adminTimer;
+function setAdminUI(loggedIn) { $('#adminLogin').style.display = loggedIn ? 'none' : ''; $('#adminDash').style.display = loggedIn ? '' : 'none'; }
+async function loadAdmin() {
+  setAdminUI(!!adminToken); if (!adminToken) return;
+  try { adminData = await api('/api/admin/overview', { headers: adminHeader() }); renderAdmin(); }
+  catch (e) { if (e.status === 401) logout(); }
+}
+function renderAdmin() {
+  const d = adminData;
+  const st = $('#sysStatus'); st.textContent = d.systemOpen ? 'OPEN FOR BOOKINGS' : 'BLOCKED BY ADMIN'; st.className = d.systemOpen ? 'status-open' : 'status-blocked';
+  const sb = $('#sysBtn'); sb.textContent = d.systemOpen ? 'Close system to block bookings' : 'Open system for bookings'; sb.className = 'btn ' + (d.systemOpen ? 'red' : 'green');
+  if (document.activeElement !== $('#rate')) $('#rate').value = d.rate;
+  $('#revenue').textContent = money(d.revenue);
+  $('#bookRows').innerHTML = d.bookings.length ? d.bookings.map(b => `<tr><td>${esc(b.bayName)}</td><td>${esc(b.name)}</td><td>${esc(b.email)}</td><td>${esc(b.plate)}</td><td class="st ${esc(b.status)}">${esc(b.status)}</td><td>${b.status === 'active' ? 'est. ' : ''}${money(b.fee)}</td></tr>`).join('')
+    : '<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:18px">No bookings yet.</td></tr>';
+}
+function logout() { adminToken = ''; try { sessionStorage.removeItem('sp_admin'); } catch {} setAdminUI(false); }
+$('#aLogin').onclick = async () => {
+  $('#aErr').textContent = '';
+  try {
+    const r = await api('/api/admin/login', { method: 'POST', body: JSON.stringify({ username: $('#aUser').value, password: $('#aPass').value }) });
+    adminToken = r.token; try { sessionStorage.setItem('sp_admin', adminToken); } catch {}
+    $('#aPass').value = ''; loadAdmin();
+  } catch (e) { $('#aErr').textContent = e.message; }
+};
+$('#aPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#aLogin').click(); });
+$('#logoutBtn').onclick = logout;
+$('#sysBtn').onclick = async () => { try { await api('/api/admin/system', { method: 'POST', headers: adminHeader(), body: JSON.stringify({ open: !adminData.systemOpen }) }); loadAdmin(); pollStatus(); } catch (e) { toast(e.message); } };
+async function gate(g) { try { const r = await api('/api/admin/gate', { method: 'POST', headers: adminHeader(), body: JSON.stringify({ gate: g }) }); toast(r.deviceOnline ? 'Opening ' + g + ' gate…' : 'ESP32 is offline. The gate will open when it reconnects (within 2 minutes).'); } catch (e) { toast(e.message); } }
+$('#gEntry').onclick = () => gate('entry'); $('#gExit').onclick = () => gate('exit');
+$('#rateBtn').onclick = async () => { try { await api('/api/admin/rate', { method: 'POST', headers: adminHeader(), body: JSON.stringify({ rate: $('#rate').value }) }); toast('Hourly rate saved.'); loadAdmin(); } catch (e) { toast(e.message); } };
+$('#csvBtn').onclick = () => {
+  if (!adminData) return;
+  const q = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+  const rows = [['Bay', 'Name', 'Email', 'Plate', 'Status', 'Fee', 'Booked at', 'Entered at', 'Left at']].concat(adminData.bookings.map(b => [b.bayName, b.name, b.email, b.plate, b.status, Number(b.fee).toFixed(2), b.createdAt || '', b.checkedInAt || '', b.endedAt || '']));
+  const blob = new Blob([rows.map(r => r.map(q).join(',')).join('\r\n')], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'parking_logs.csv'; a.click(); URL.revokeObjectURL(a.href);
+};
+
+/* ---------- start ---------- */
+pollStatus(); loadInbox();
+setInterval(pollStatus, 2500);
+setInterval(() => { if (view === 'admin' && adminToken) loadAdmin(); if (view === 'inbox') loadInbox(); }, 4000);
+setInterval(() => { if (view !== 'inbox') loadInbox(); }, 15000);
+</script>
+</body>
+</html>
